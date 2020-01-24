@@ -10,14 +10,29 @@ class CuraPrintFile(PrintFile):
     slicer_type = SLICER_CURA
     LAYER_START_RE = re.compile(b';LAYER:')
 
-    def __init__(self, debug=False):
-        super().__init__(debug=debug)
+##    def __init__(self, debug=False):
+##        super().__init__(debug=debug)
 
     def process(self, gcode_file):
         self.open_file(gcode_file)
+        self.check_header()
         #self.patch_auto_retraction()
         self.patch_first_layer_temp()
         return self.save_new_file()
+    
+    def check_header(self):
+        # Remove lines before Cube header
+        self.line_index = 0
+        while True:
+            try:
+                l, comment = self.read_line(self.line_index)
+                if l.startswith(b"^Firmware"):
+                    break
+                else:
+                    self.delete_line(self.line_index)
+            except IndexError:
+                break
+            self.line_index += 1
 
     def patch_auto_retraction(self):
         # remove retraction setting. Cube uses it's own setting for this apparently, so disable Cura's option
